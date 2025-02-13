@@ -1,14 +1,13 @@
 package main
 
 import (
-    "log"
-    "github.com/alemelis/filini/server"
-    "github.com/alemelis/filini/db"
+	"github.com/alemelis/filini/db"
+	"github.com/alemelis/filini/server"
+	"log"
 )
 
 func main() {
-    db.InitDB()
-    log.Println("Starting filini...")
-    server.Start()
+	db.InitDB()
+	log.Println("Starting filini...")
+	server.Start()
 }
-
