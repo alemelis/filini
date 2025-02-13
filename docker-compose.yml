@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  filini:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://filini:password@db:5432/filini?sslmode=disable
+    volumes:
+      - ./storage:/app/storage
+
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: filini
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: filini
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./storage/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+volumes:
+  pgdata:
