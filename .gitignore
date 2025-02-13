@@ -1,0 +1,8 @@
+storage/
+*.mp4
+*.gif
+*.srt
+*.log
+.env
+*.swo
+*.swp
