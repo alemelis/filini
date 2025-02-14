@@ -3,6 +3,12 @@ storage/
 *.gif
 *.srt
 *.log
+
+# secrets
 .env
+
+# vim
 *.swo
 *.swp
+
+.DS_Store

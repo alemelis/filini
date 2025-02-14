@@ -3,9 +3,11 @@ package db
 import (
 	"fmt"
 	"github.com/alemelis/filini/models"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
+	"os"
 )
 
 // DB is the global variable representing the database connection
@@ -14,7 +16,22 @@ var DB *gorm.DB
 // InitDB initializes the database connection
 func InitDB() {
 	// Define the database connection string
-	dsn := "host=db user=postgres password=mysecretpassword dbname=filini port=5432 sslmode=disable"
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found: %v", err)
+	}
+
+	// Get environment variables with fallback values
+	host := os.Getenv("DB_HOST")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dbname := os.Getenv("DB_NAME")
+	port := os.Getenv("DB_PORT")
+
+	// Construct the database connection string
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		host, user, password, dbname, port,
+	)
 	var err error
 
 	// Initialize the DB variable

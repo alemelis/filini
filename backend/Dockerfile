@@ -23,6 +23,7 @@ RUN apt update && apt install -y ffmpeg
 
 # Copy the built binary from the previous stage
 COPY --from=build /app/filini .
+COPY --from=build /app/.env .
 RUN chmod +x /app/filini
 
 # Expose the port your app runs on

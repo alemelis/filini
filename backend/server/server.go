@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/alemelis/filini/db"
 	"github.com/alemelis/filini/models"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	"log"
@@ -23,6 +24,7 @@ func Start() {
 	}
 
 	router := gin.Default()
+	router.Use(cors.Default())
 
 	// Define routes
 	router.POST("/subtitles", CreateSubtitle)
@@ -32,7 +34,7 @@ func Start() {
 	})
 
 	for _, route := range router.Routes() {
-	    fmt.Println(route.Method, route.Path)
+		fmt.Println(route.Method, route.Path)
 	}
 
 	fmt.Println("Filini is running on port", port)
@@ -60,28 +62,28 @@ func CreateSubtitle(c *gin.Context) {
 }
 
 func HandleSearchSubtitles(c *gin.Context) {
-    query := c.DefaultQuery("q", "")
-    if query == "" {
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Query parameter 'q' is required"})
-        return
-    }
+	query := c.DefaultQuery("q", "")
+	if query == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Query parameter 'q' is required"})
+		return
+	}
 
-    var sampleSubtitles = []models.Subtitle{
-        {ID: 1, VideoID: 1, Text: "This is a test subtitle.", StartTime: 0, EndTime: 5},
-        {ID: 2, VideoID: 1, Text: "Another subtitle for testing.", StartTime: 5, EndTime: 10},
-        {ID: 3, VideoID: 2, Text: "Some more subtitles to search.", StartTime: 0, EndTime: 5},
-    }
+	var sampleSubtitles = []models.Subtitle{
+		{ID: 1, VideoID: 1, Text: "This is a test subtitle.", StartTime: 0, EndTime: 5},
+		{ID: 2, VideoID: 1, Text: "Another subtitle for testing.", StartTime: 5, EndTime: 10},
+		{ID: 3, VideoID: 2, Text: "Some more subtitles to search.", StartTime: 0, EndTime: 5},
+	}
 
-    var results []models.Subtitle
-    for _, subtitle := range sampleSubtitles {
-        if strings.Contains(subtitle.Text, query) {
-            results = append(results, subtitle)
-        }
-    }
+	var results []models.Subtitle
+	for _, subtitle := range sampleSubtitles {
+		if strings.Contains(subtitle.Text, query) {
+			results = append(results, subtitle)
+		}
+	}
 
-    if len(results) == 0 {
-        c.JSON(http.StatusNotFound, gin.H{"message": "No subtitles found matching your query"})
-    } else {
-        c.JSON(http.StatusOK, results)
-    }
+	if len(results) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"message": "No subtitles found matching your query"})
+	} else {
+		c.JSON(http.StatusOK, results)
+	}
 }
