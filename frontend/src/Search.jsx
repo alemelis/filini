@@ -22,7 +22,7 @@ function Search() {
       {/* Search Input */}
       <input
         type="text"
-        placeholder="Search subtitles..."
+        placeholder="Search quote..."
         className="border p-2"
         value={query}
         onChange={(e) => setQuery(e.target.value)} // update query when user types

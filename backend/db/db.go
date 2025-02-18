@@ -2,12 +2,13 @@ package db
 
 import (
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/alemelis/filini/models"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
-	"os"
 )
 
 // DB is the global variable representing the database connection
@@ -64,4 +65,13 @@ func InsertSubtitle(id, videoID int, text string, startTime, endTime float64) er
 	}
 
 	return nil
+}
+
+func GetVideoFilePath(videoID int) (string, error) {
+	var filePath string
+	result := DB.Table("videos").Select("file_path").Where("id = ?", videoID).Scan(&filePath)
+	if result.Error != nil {
+		return "", result.Error
+	}
+	return filePath, nil
 }
