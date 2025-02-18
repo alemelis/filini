@@ -17,21 +17,28 @@ function Search() {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch(); // Trigger search when Enter is pressed
+    }
+  };
+
   return (
     <div className="p-4">
       {/* Search Input */}
       <input
         type="text"
         placeholder="Search quote..."
-        className="border p-2"
+        className="p-2 border border-gray-300"
         value={query}
         onChange={(e) => setQuery(e.target.value)} // update query when user types
+        onKeyDown={handleKeyDown}
       />
 
       {/* Search Button */}
       <button
         onClick={handleSearch}
-        className="bg-blue-500 text-white p-2 ml-2"
+        className="bg-blue-500 text-white p-2 ml-4"
       >
         Search
       </button>
