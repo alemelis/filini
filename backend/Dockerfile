@@ -5,11 +5,9 @@ FROM golang:1.23 AS build
 WORKDIR /app
 
 # Copy go.mod and go.sum, then download dependencies
-COPY go.mod go.sum ./
-RUN go mod tidy
-
 # Copy the rest of the source code
 COPY . .
+RUN go mod tidy
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -o filini ./cmd/main.go

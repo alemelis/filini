@@ -1,14 +1,13 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
-	"time"
 
 	"github.com/alemelis/filini/db"
 	"github.com/alemelis/filini/models"
@@ -36,10 +35,12 @@ func Start() {
 	router.POST("/subtitles", CreateSubtitle)
 	router.POST("/subtitles/upload", HandleUploadSubtitles)
 	router.GET("/subtitles/search", HandleSearchSubtitles)
-	router.POST("/generate_gif", GenerateGIFHandler)
+	router.GET("/gif/:subtitle_id", HandleGenerateGIF)
+	router.POST("/generate_gif", HandleGenerateGIF)
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "Filini is running!"})
 	})
+	router.Static("/storage/gifs", "./storage/gifs")
 
 	for _, route := range router.Routes() {
 		fmt.Println(route.Method, route.Path)
@@ -158,70 +159,95 @@ func HandleSearchSubtitles(c *gin.Context) {
 		return
 	}
 
-	results, err := db.SearchSubtitles(query)
+	quotes, err := db.SearchSubtitles(query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed"})
 		return
 	}
 
-	if len(results) == 0 {
+	if len(quotes) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No subtitles found matching your query"})
 	} else {
-		c.JSON(http.StatusOK, results)
+		var gifs []models.Gif
+		for _, quote := range quotes {
+			var subtitle models.Subtitle
+			if err := db.DB.First(&subtitle, quote.ID).Error; err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Subtitle not found"})
+				return
+			}
+
+			var video models.Video
+			if err := db.DB.First(&video, subtitle.VideoID).Error; err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Video not found"})
+				return
+			}
+
+			gifPath := generateGIF(video.ID, subtitle.ID)
+			gifs = append(gifs, models.Gif{
+				Quote:    subtitle.Text,
+				FilePath: gifPath,
+			})
+		}
+		c.JSON(http.StatusOK, gifs)
 	}
 }
 
-type GenerateGIFRequest struct {
-	VideoID   int     `json:"video_id"`
-	StartTime float64 `json:"start_time"`
-	EndTime   float64 `json:"end_time"`
+func generateGIF(videoID, subtitleID int) string {
+	// Define GIF output path
+	gifPath := fmt.Sprintf("storage/gifs/td-%d-%d.gif", videoID, subtitleID)
+
+	if _, err := os.Stat(gifPath); !os.IsNotExist(err) {
+		return gifPath
+	}
+
+	var subtitle models.Subtitle
+	db.DB.First(&subtitle, subtitleID)
+
+	// Fetch the associated video
+	var video models.Video
+	db.DB.First(&video, subtitle.VideoID)
+
+	// Run ffmpeg to generate GIF
+	cmd := exec.Command("ffmpeg", "-i", video.FilePath, "-ss", fmt.Sprintf("%f", subtitle.StartTime), "-to", fmt.Sprintf("%f", subtitle.EndTime+1.0), "-vf", "fps=10,scale=320:-1", "-y", gifPath)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	cmd.Run()
+
+	return gifPath
 }
 
-func GenerateGIFHandler(c *gin.Context) {
-	var req GenerateGIFRequest
+func HandleGenerateGIF(c *gin.Context) {
+	subtitleID := c.Param("subtitle_id")
 
-	// Parse JSON request
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+	// Fetch subtitle details
+	var subtitle models.Subtitle
+	if err := db.DB.First(&subtitle, subtitleID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Subtitle not found"})
 		return
 	}
 
-	// Validate input
-	if req.EndTime <= req.StartTime {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid time range"})
-		return
-	}
-
-	// Get the video file path from the database
-	videoPath, err := db.GetVideoFilePath(req.VideoID) // Fixed: Use db package to get video path
-	if err != nil {
+	// Fetch the associated video
+	var video models.Video
+	if err := db.DB.First(&video, subtitle.VideoID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Video not found"})
 		return
 	}
 
-	// Generate the GIF file name
-	gifFilename := fmt.Sprintf("gif_%d_%d.gif", req.VideoID, time.Now().Unix())
-	gifPath := filepath.Join("/tmp", gifFilename)
+	// Define GIF output path
+	gifPath := fmt.Sprintf("storage/gifs/td-%d-%d.gif", video.ID, subtitle.ID)
 
-	// Call ffmpeg to generate the GIF
-	err = generateGIF(videoPath, req.StartTime, req.EndTime, gifPath)
+	// Run ffmpeg to generate GIF
+	cmd := exec.Command("ffmpeg", "-i", video.FilePath, "-ss", fmt.Sprintf("%f", subtitle.StartTime), "-to", fmt.Sprintf("%f", subtitle.EndTime+1.0), "-vf", "fps=10,scale=320:-1", "-y", gifPath)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate GIF"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate GIF", "details": stderr.String()})
 		return
 	}
 
-	// Respond with the GIF URL
-	c.JSON(http.StatusOK, gin.H{"gif_url": "/tmp/" + gifFilename})
-}
-
-func generateGIF(videoPath string, startTime, endTime float64, outputPath string) error {
-	cmd := exec.Command("ffmpeg",
-		"-i", videoPath,
-		"-ss", fmt.Sprintf("%.2f", startTime),
-		"-to", fmt.Sprintf("%.2f", endTime),
-		"-vf", "fps=10,scale=320:-1",
-		"-y", outputPath,
-	)
-
-	return cmd.Run()
+	// Return the generated GIF path
+	c.JSON(http.StatusOK, gin.H{"gif_url": fmt.Sprintf("/%s", gifPath)})
 }

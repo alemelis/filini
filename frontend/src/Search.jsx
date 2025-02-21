@@ -47,7 +47,13 @@ function Search() {
       <ul className="mt-4">
         {results.map((item, index) => (
           <li key={index} className="border p-2 mt-2">
-            {item.text}
+            <div>{item.quote}</div>
+            <div>
+              <img
+                src={`http://localhost:8080/${item.file_path}`}
+                alt="Subtitle GIF"
+              />
+            </div>
           </li>
         ))}
       </ul>
