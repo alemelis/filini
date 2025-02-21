@@ -6,7 +6,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - filini_network
     environment:
@@ -15,6 +16,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       DB_PORT: ${DB_PORT}
+    restart: unless-stopped
 
   db:
     image: postgres:13
@@ -28,6 +30,12 @@ services:
       - filini_network
     env_file:
       - .env
+    healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U postgres"]
+        interval: 5s
+        timeout: 5s
+        retries: 5
+    restart: unless-stopped
 
 networks:
   filini_network:

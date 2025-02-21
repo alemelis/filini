@@ -47,13 +47,31 @@ func InitDB() {
 		log.Fatalf("Error automigrating models: %v", err)
 	}
 
+	err = DB.AutoMigrate(&models.Video{})
+	if err != nil {
+		log.Fatalf("Error automigrating models: %v", err)
+	}
+
 	fmt.Println("Database connection established!")
 }
 
-// Insert a new subtitle into the db
-func InsertSubtitle(id, videoID int, text string, startTime, endTime float64) error {
+func InsertVideo(id int, title string, filePath string) error {
+	video := models.Video{
+		Model:    gorm.Model{},
+		ID:       id,
+		Title:    title,
+		FilePath: filePath,
+	}
+
+	if err := DB.Create(&video).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func InsertSubtitle(videoID int, text string, startTime, endTime float64) error {
 	subtitle := models.Subtitle{
-		ID:        id,
 		VideoID:   videoID,
 		Text:      text,
 		StartTime: startTime,
@@ -65,6 +83,22 @@ func InsertSubtitle(id, videoID int, text string, startTime, endTime float64) er
 	}
 
 	return nil
+}
+
+func InsertSubtitles(subtitles []models.Subtitle) error {
+	if len(subtitles) == 0 {
+		return nil
+	}
+	return DB.Create(&subtitles).Error
+}
+
+func SearchSubtitles(query string) ([]models.Subtitle, error) {
+	var results []models.Subtitle
+	err := DB.Table("subtitles").Where("text ILIKE ?", "%"+query+"%").Find(&results).Error
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 func GetVideoFilePath(videoID int) (string, error) {

@@ -7,11 +7,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/alemelis/filini/db"
 	"github.com/alemelis/filini/models"
+	"github.com/alemelis/filini/utils"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -31,7 +32,9 @@ func Start() {
 	router.Use(cors.Default())
 
 	// Define routes
+	router.POST("/video", CreateVideo)
 	router.POST("/subtitles", CreateSubtitle)
+	router.POST("/subtitles/upload", HandleUploadSubtitles)
 	router.GET("/subtitles/search", HandleSearchSubtitles)
 	router.POST("/generate_gif", GenerateGIFHandler)
 	router.GET("/", func(c *gin.Context) {
@@ -44,7 +47,35 @@ func Start() {
 
 	fmt.Println("Filini is running on port", port)
 	log.Fatal(router.Run(":" + port)) // Start the server
+}
 
+func CreateVideo(c *gin.Context) {
+	id, err := strconv.Atoi(c.PostForm("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or missing id"})
+		return
+	}
+
+	title := c.PostForm("title")
+	if title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get title"})
+		return
+	}
+
+	file_path := c.PostForm("file_path")
+	if file_path == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get file_path"})
+		return
+	}
+
+	// Add video to the database
+	err = db.InsertVideo(id, title, file_path)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add video"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Video added successfully"})
 }
 
 func CreateSubtitle(c *gin.Context) {
@@ -57,13 +88,67 @@ func CreateSubtitle(c *gin.Context) {
 	}
 
 	// Add subtitle to the database
-	err := db.InsertSubtitle(subtitle.ID, subtitle.VideoID, subtitle.Text, subtitle.StartTime, subtitle.EndTime)
+	err := db.InsertSubtitle(subtitle.VideoID, subtitle.Text, subtitle.StartTime, subtitle.EndTime)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add subtitle"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Subtitle added successfully"})
+}
+
+func CreateSubtitles(c *gin.Context) {
+	var subtitles []models.Subtitle
+
+	// Bind JSON array of subtitles
+	if err := c.ShouldBindJSON(&subtitles); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	// Insert all subtitles into the database
+	if err := db.InsertSubtitles(subtitles); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add subtitles"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Subtitles added successfully"})
+}
+
+func HandleUploadSubtitles(c *gin.Context) {
+	videoID, err := strconv.Atoi(c.PostForm("video_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or missing video_id"})
+		return
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get file"})
+		return
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
+		return
+	}
+	defer src.Close()
+
+	// Parse SRT file
+	subtitles, err := utils.ParseSRT(src, videoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse SRT file"})
+		return
+	}
+
+	// Insert subtitles into DB
+	if err := db.InsertSubtitles(subtitles); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store subtitles"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Subtitles uploaded successfully"})
 }
 
 func HandleSearchSubtitles(c *gin.Context) {
@@ -73,17 +158,10 @@ func HandleSearchSubtitles(c *gin.Context) {
 		return
 	}
 
-	var sampleSubtitles = []models.Subtitle{
-		{ID: 1, VideoID: 1, Text: "This is a test subtitle.", StartTime: 0, EndTime: 5},
-		{ID: 2, VideoID: 1, Text: "Another subtitle for testing.", StartTime: 5, EndTime: 10},
-		{ID: 3, VideoID: 2, Text: "Some more subtitles to search.", StartTime: 0, EndTime: 5},
-	}
-
-	var results []models.Subtitle
-	for _, subtitle := range sampleSubtitles {
-		if strings.Contains(subtitle.Text, query) {
-			results = append(results, subtitle)
-		}
+	results, err := db.SearchSubtitles(query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query failed"})
+		return
 	}
 
 	if len(results) == 0 {
