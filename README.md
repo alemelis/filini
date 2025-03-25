@@ -2,8 +2,6 @@
 
 ## backend
 
-- start docker
-
 ```
 cd backend
 docker compose up

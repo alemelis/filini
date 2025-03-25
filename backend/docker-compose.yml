@@ -1,24 +1,24 @@
 version: '3'
 services:
-  filini:
-    build:
-      context: .
-    ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - filini_network
-    environment:
-      DB_HOST: ${DB_HOST}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      DB_PORT: ${DB_PORT}
-    restart: unless-stopped
-    volumes:
-      - ./storage:/app/storage
+  # filini:
+  #   build:
+  #     context: .
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   networks:
+  #     - filini_network
+  #   environment:
+  #     DB_HOST: ${DB_HOST}
+  #     DB_USER: ${DB_USER}
+  #     DB_PASSWORD: ${DB_PASSWORD}
+  #     DB_NAME: ${DB_NAME}
+  #     DB_PORT: ${DB_PORT}
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./storage:/app/storage
 
   db:
     image: postgres:13

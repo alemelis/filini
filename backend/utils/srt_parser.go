@@ -28,7 +28,7 @@ func parseTimestamp(s string) (float64, error) {
 }
 
 // ParseSRT reads an .srt file and extracts subtitles.
-func ParseSRT(reader io.Reader, videoID int) ([]models.Subtitle, error) {
+func ParseSRT(reader io.Reader, videoID uint32) ([]models.Subtitle, error) {
 	var subtitles []models.Subtitle
 	scanner := bufio.NewScanner(reader)
 

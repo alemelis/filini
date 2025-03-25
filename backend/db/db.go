@@ -52,10 +52,15 @@ func InitDB() {
 		log.Fatalf("Error automigrating models: %v", err)
 	}
 
+	err = DB.AutoMigrate(&models.Gif{})
+	if err != nil {
+		log.Fatalf("Error automigrating models: %v", err)
+	}
+
 	fmt.Println("Database connection established!")
 }
 
-func InsertVideo(id int, title string, filePath string) error {
+func InsertVideo(id uint32, title string, filePath string) error {
 	video := models.Video{
 		Model:    gorm.Model{},
 		ID:       id,
@@ -70,7 +75,7 @@ func InsertVideo(id int, title string, filePath string) error {
 	return nil
 }
 
-func InsertSubtitle(videoID int, text string, startTime, endTime float64) error {
+func InsertSubtitle(videoID uint32, text string, startTime, endTime float64) error {
 	subtitle := models.Subtitle{
 		VideoID:   videoID,
 		Text:      text,
