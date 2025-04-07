@@ -41,60 +41,23 @@ func InitDB() {
 		log.Fatalf("Error connecting to the database: %v", err)
 	}
 
-	// Auto migrate models (create tables if they don't exist)
-	err = DB.AutoMigrate(&models.Subtitle{})
-	if err != nil {
-		log.Fatalf("Error automigrating models: %v", err)
-	}
+	// // Auto migrate models (create tables if they don't exist)
+	// err = DB.AutoMigrate(&models.Subtitle{})
+	// if err != nil {
+	// 	log.Fatalf("Error automigrating models: %v", err)
+	// }
 
-	err = DB.AutoMigrate(&models.Video{})
-	if err != nil {
-		log.Fatalf("Error automigrating models: %v", err)
-	}
+	// err = DB.AutoMigrate(&models.Video{})
+	// if err != nil {
+	// 	log.Fatalf("Error automigrating models: %v", err)
+	// }
 
-	err = DB.AutoMigrate(&models.Gif{})
-	if err != nil {
-		log.Fatalf("Error automigrating models: %v", err)
-	}
+	// err = DB.AutoMigrate(&models.Webm{})
+	// if err != nil {
+	// 	log.Fatalf("Error automigrating models: %v", err)
+	// }
 
 	fmt.Println("Database connection established!")
-}
-
-func InsertVideo(id uint32, title string, filePath string) error {
-	video := models.Video{
-		Model:    gorm.Model{},
-		ID:       id,
-		Title:    title,
-		FilePath: filePath,
-	}
-
-	if err := DB.Create(&video).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func InsertSubtitle(videoID uint32, text string, startTime, endTime float64) error {
-	subtitle := models.Subtitle{
-		VideoID:   videoID,
-		Text:      text,
-		StartTime: startTime,
-		EndTime:   endTime,
-	}
-
-	if err := DB.Create(&subtitle).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func InsertSubtitles(subtitles []models.Subtitle) error {
-	if len(subtitles) == 0 {
-		return nil
-	}
-	return DB.Create(&subtitles).Error
 }
 
 func SearchSubtitles(query string) ([]models.Subtitle, error) {
@@ -104,13 +67,4 @@ func SearchSubtitles(query string) ([]models.Subtitle, error) {
 		return nil, err
 	}
 	return results, nil
-}
-
-func GetVideoFilePath(videoID int) (string, error) {
-	var filePath string
-	result := DB.Table("videos").Select("file_path").Where("id = ?", videoID).Scan(&filePath)
-	if result.Error != nil {
-		return "", result.Error
-	}
-	return filePath, nil
 }

@@ -2,7 +2,7 @@ package models
 
 import "gorm.io/gorm"
 
-type Gif struct {
+type Webm struct {
 	gorm.Model
 	ID         string `json:"id"`
 	VideoId    string `json:"video_id"`
