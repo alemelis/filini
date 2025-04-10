@@ -1,4 +1,8 @@
-CREATE TABLE videos (id SERIAL PRIMARY KEY, title TEXT NOT NULL);
+CREATE TABLE videos (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    series TEXT NOT NULL
+);
 
 CREATE TABLE subtitles (
     id SERIAL PRIMARY KEY,

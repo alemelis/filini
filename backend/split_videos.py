@@ -5,6 +5,9 @@ import click
 import psycopg2
 from dotenv import load_dotenv
 import os
+import hashlib
+import random
+import time
 
 
 def migrate_schema(conn):
@@ -17,7 +20,6 @@ def migrate_schema(conn):
             conn.commit()
             print("Database schema migrated successfully")
         except psycopg2.errors.DuplicateTable:
-            # Rollback the transaction if tables already exist
             conn.rollback()
             print("Schema already exists, continuing...")
         except Exception as e:
@@ -26,11 +28,11 @@ def migrate_schema(conn):
             raise
 
 
-def split_video(conn, v: Path, s: Path, video_id: int, video_name: str):
+def split_video(conn, v: Path, s: Path, video_id: int, video_name: str, series: str, debug: bool = False):
     video = moviepy.VideoFileClip(v)
 
     for subtitle in srt.parse(s.read_text()):
-        if subtitle.index in [10, "10"]:
+        if subtitle.index in [10, "10"] and debug:
             break
 
         clip = video.subclipped(str(subtitle.start), str(subtitle.end))
@@ -47,21 +49,25 @@ def split_video(conn, v: Path, s: Path, video_id: int, video_name: str):
         )
 
         subtitle_id = write_subtitle(conn, video_id, subtitle.content)
+        if not subtitle_id:
+            continue
 
-        webm_path = Path("storage", "webm", video_name, f"{subtitle.index}.webm")
         txt_clip = txt_clip.with_position("center").with_duration(str(subtitle.end - subtitle.start))
-        overlay = moviepy.CompositeVideoClip([clip, txt_clip])
+        overlay = moviepy.CompositeVideoClip([clip.without_audio(), txt_clip])
+
+        random_hash = hashlib.md5(f"{series}{time.time()}{random.random()}{subtitle.content}".encode()).hexdigest()[:10]
+        webm_path = Path("storage", "webm", series, f"{random_hash}.webm")
         overlay.write_videofile(webm_path)
 
         write_webm(conn, video_id, subtitle_id, webm_path)
 
 
-def write_video(conn, video_name) -> int:
+def write_video(conn, video_name, series) -> int:
     cur = conn.cursor()
     try:
         cur.execute(
-            "SELECT id FROM videos WHERE title = %s",
-            (video_name,),
+            "SELECT id FROM videos WHERE title = %s AND series = %s",
+            (video_name, series),
         )
         result = cur.fetchone()
 
@@ -69,8 +75,8 @@ def write_video(conn, video_name) -> int:
             video_id = result[0]
         else:
             cur.execute(
-                "INSERT INTO videos (title) VALUES (%s) RETURNING id",
-                (video_name,),
+                "INSERT INTO videos (title, series) VALUES (%s, %s) RETURNING id",
+                (video_name, series),
             )
             video_id = cur.fetchone()[0]
             conn.commit()
@@ -93,7 +99,7 @@ def write_subtitle(conn, video_id, subtitle_text) -> int:
         result = cur.fetchone()
 
         if result:
-            subtitle_id = result[0]
+            subtitle_id = None
         else:
             cur.execute(
                 "INSERT INTO subtitles (video_id, text) VALUES (%s, %s) RETURNING id",
@@ -145,7 +151,13 @@ def write_webm(conn, video_id, subtitle_id, webm_path):
     required=True,
     help="Path to the subtitle file",
 )
-def main(video_path, subtitle_path):
+@click.option(
+    "--series",
+    type=str,
+    default="",
+    help="Series name for the video",
+)
+def main(video_path, subtitle_path, series):
     video_name = video_path.stem.replace(" ", "_")
 
     load_dotenv()
@@ -159,11 +171,12 @@ def main(video_path, subtitle_path):
 
     migrate_schema(conn)
 
-    video_id = write_video(conn, video_name)
+    video_id = write_video(conn, video_name, series)
 
-    if not (webm_path := Path("storage", "webm", video_name)).exists():
+    if not (webm_path := Path("storage", "webm", series)).exists():
         webm_path.mkdir(parents=True, exist_ok=True)
-    split_video(conn, video_path, subtitle_path, video_id, video_name)
+
+    split_video(conn, video_path, subtitle_path, video_id, video_name, series)
 
 
 if __name__ == "__main__":

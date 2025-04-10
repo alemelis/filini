@@ -41,7 +41,7 @@ func InitDB() {
 		log.Fatalf("Error connecting to the database: %v", err)
 	}
 
-	// // Auto migrate models (create tables if they don't exist)
+	// Auto migrate models (create tables if they don't exist)
 	// err = DB.AutoMigrate(&models.Subtitle{})
 	// if err != nil {
 	// 	log.Fatalf("Error automigrating models: %v", err)
@@ -60,9 +60,12 @@ func InitDB() {
 	fmt.Println("Database connection established!")
 }
 
-func SearchSubtitles(query string) ([]models.Subtitle, error) {
+func SearchSubtitles(query string, series string) ([]models.Subtitle, error) {
+	var video_id int
+	DB.Table("videos").Select("id").Where("series = ?", series).Limit(1).Find(&video_id)
+
 	var results []models.Subtitle
-	err := DB.Table("subtitles").Where("text ILIKE ?", "%"+query+"%").Find(&results).Error
+	err := DB.Table("subtitles").Where("video_id = ?", video_id).Where("text ILIKE ?", "%"+query+"%").Find(&results).Error
 	if err != nil {
 		return nil, err
 	}
