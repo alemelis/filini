@@ -1,42 +1,41 @@
-version: '3'
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - filini_network
-    environment:
-      DB_HOST: db
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      DB_PORT: ${DB_PORT}
-    restart: unless-stopped
-    volumes:
-      - ./backend/storage:/app/storage
-    command: ["go", "run", "cmd/main.go"]
+  # backend:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   networks:
+  #     - filini_network
+  #   environment:
+  #     DB_HOST: db
+  #     DB_USER: ${DB_USER}
+  #     DB_PASSWORD: ${DB_PASSWORD}
+  #     DB_NAME: ${DB_NAME}
+  #     DB_PORT: ${DB_PORT}
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./backend/storage:/app/storage
+  #   command: ["/usr/local/bin/filini"]
 
   # Frontend service
-  frontend:
-    build:
-      context: ./subtitle-seeker-vista
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-    networks:
-      - filini_network
-    restart: unless-stopped
-    environment:
-      - REACT_APP_API_URL=http://backend:8080
-    command: ["npm", "run", "dev"]
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - filini_network
+  #   restart: unless-stopped
+  #   environment:
+  #     - REACT_APP_API_URL=http://pi4.local:8080
+  #   command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
 
   # Database service
   db:
@@ -58,9 +57,10 @@ services:
       retries: 5
     restart: unless-stopped
     volumes:
-      - /mnt/usb/filini/postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
 
-#todo: need to migrate the current db there!
+volumes:
+  postgres_data:
 
 networks:
   filini_network:

@@ -24,8 +24,15 @@ func Start() {
 		port = "8080" // Default port
 	}
 
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"https://tuotubo.natomo.xyz"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	// Important for video streaming
+	config.ExposeHeaders = []string{"Content-Length", "Content-Range", "Accept-Ranges"}
+
 	r := gin.Default()
-	r.Use(cors.Default())
+	r.Use(cors.New(config))
 
 	// Define routes
 	// r.GET("/", HandleRoot)
