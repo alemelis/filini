@@ -1,0 +1,3 @@
+[submodule "subtitle-seeker-vista"]
+	path = subtitle-seeker-vista
+	url = https://github.com/alemelis/subtitle-seeker-vista.git

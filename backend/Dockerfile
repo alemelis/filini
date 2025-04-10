@@ -16,9 +16,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o filini ./cmd/main.go
 FROM debian:bookworm-slim
 WORKDIR /app
 
-# Install FFmpeg (for GIF processing)
-RUN apt update && apt install -y ffmpeg
-
 # Copy the built binary from the previous stage
 COPY --from=build /app/filini /usr/local/bin/filini
 COPY --from=build /app/.env .

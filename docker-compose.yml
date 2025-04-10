@@ -1,0 +1,67 @@
+version: '3'
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - filini_network
+    environment:
+      DB_HOST: db
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_PORT: ${DB_PORT}
+    restart: unless-stopped
+    volumes:
+      - ./backend/storage:/app/storage
+    command: ["go", "run", "cmd/main.go"]
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./subtitle-seeker-vista
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - filini_network
+    restart: unless-stopped
+    environment:
+      - REACT_APP_API_URL=http://backend:8080
+    command: ["npm", "run", "dev"]
+
+  # Database service
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    networks:
+      - filini_network
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    volumes:
+      - /mnt/usb/filini/postgres_data:/var/lib/postgresql/data
+
+#todo: need to migrate the current db there!
+
+networks:
+  filini_network:
+    driver: bridge
