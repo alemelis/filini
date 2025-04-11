@@ -25,7 +25,7 @@ func Start() {
 	}
 
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"https://tuotubo.natomo.xyz"}
+	config.AllowOrigins = []string{"https://tuotubo.natomo.xyz", "http://localhost:3000"}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	// Important for video streaming
