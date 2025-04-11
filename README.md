@@ -32,6 +32,8 @@ cd frontend
 . ~/.nvm/nvm.sh
 nvm use 18
 npm run dev
+
+npm run build
 ```
 
 - go to [http://localhost:5173/](http://localhost:5173/)

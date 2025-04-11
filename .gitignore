@@ -20,3 +20,5 @@ subtitle-seeker-vista
 *_backup.sql
 
 deploy_to_pi.sh
+deploy.sh
+services
