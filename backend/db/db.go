@@ -61,11 +61,11 @@ func InitDB() {
 }
 
 func SearchSubtitles(query string, series string) ([]models.Subtitle, error) {
-	var video_id int
-	DB.Table("videos").Select("id").Where("series = ?", series).Limit(1).Find(&video_id)
+	var video_ids []int
+	DB.Table("videos").Select("id").Where("series = ?", series).Find(&video_ids)
 
 	var results []models.Subtitle
-	err := DB.Table("subtitles").Where("video_id = ?", video_id).Where("text ILIKE ?", "%"+query+"%").Find(&results).Error
+	err := DB.Table("subtitles").Where("video_id IN (?)", video_ids).Where("text ILIKE ?", "%"+query+"%").Find(&results).Error
 	if err != nil {
 		return nil, err
 	}

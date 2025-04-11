@@ -35,7 +35,6 @@ func Start() {
 	r.Use(cors.New(config))
 
 	// Define routes
-	// r.GET("/", HandleRoot)
 	r.GET("/subtitles/search", HandleSearchSubtitles)
 	r.Static("/storage/webm", "./storage/webm")
 
@@ -51,7 +50,7 @@ func Start() {
 // 	c.JSON(http.StatusOK, gin.H{
 // 		"message": "Filini API server is running",
 // 		"endpoints": []string{
-// 			"/subtitles/search?q={query}",
+// 			"/subtitles/search?q={query}&s={series}",
 // 			"/storage/webm/{filename}",
 // 		},
 // 	})
@@ -62,6 +61,11 @@ func HandleSearchSubtitles(c *gin.Context) {
 	series := c.DefaultQuery("s", "")
 	if query == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Query parameter 'q' is required"})
+		return
+	}
+
+	if series == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Query parameter 's' is required"})
 		return
 	}
 
