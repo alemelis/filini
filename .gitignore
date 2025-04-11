@@ -14,3 +14,9 @@ storage/
 .DS_Store
 
 subtitle-seeker-vista
+
+.rsyncignore*
+
+*_backup.sql
+
+deploy_to_pi.sh
