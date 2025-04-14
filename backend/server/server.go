@@ -46,16 +46,6 @@ func Start() {
 	log.Fatal(r.Run(":" + port)) // Start the server
 }
 
-// func HandleRoot(c *gin.Context) {
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"message": "Filini API server is running",
-// 		"endpoints": []string{
-// 			"/subtitles/search?q={query}&s={series}",
-// 			"/storage/webm/{filename}",
-// 		},
-// 	})
-// }
-
 func HandleSearchSubtitles(c *gin.Context) {
 	query := c.DefaultQuery("q", "")
 	series := c.DefaultQuery("s", "")
@@ -78,17 +68,11 @@ func HandleSearchSubtitles(c *gin.Context) {
 	if len(quotes) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"message": "No subtitles found matching your query"})
 	} else {
-		var webms []models.Webm
+		var clips []models.Clip
 		for _, quote := range quotes {
 			var subtitle models.Subtitle
 			if err := db.DB.First(&subtitle, quote.ID).Error; err != nil {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Subtitle not found"})
-				return
-			}
-
-			var video models.Video
-			if err := db.DB.First(&video, subtitle.VideoID).Error; err != nil {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Video not found"})
 				return
 			}
 
@@ -98,14 +82,12 @@ func HandleSearchSubtitles(c *gin.Context) {
 				return
 			}
 
-			webms = append(webms, models.Webm{
-				Model:      gorm.Model{},
-				ID:         webm.ID,
-				VideoId:    webm.VideoId,
-				SubtitleId: webm.SubtitleId,
-				FilePath:   webm.FilePath,
+			clips = append(clips, models.Clip{
+				Model:    gorm.Model{},
+				Quote:    subtitle.Text,
+				WebmPath: webm.FilePath,
 			})
 		}
-		c.JSON(http.StatusOK, webms)
+		c.JSON(http.StatusOK, clips)
 	}
 }

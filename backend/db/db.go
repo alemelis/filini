@@ -65,9 +65,15 @@ func SearchSubtitles(query string, series string) ([]models.Subtitle, error) {
 	DB.Table("videos").Select("id").Where("series = ?", series).Find(&video_ids)
 
 	var results []models.Subtitle
-	err := DB.Table("subtitles").Where("video_id IN (?)", video_ids).Where("text ILIKE ?", "%"+query+"%").Find(&results).Error
-	if err != nil {
-		return nil, err
+	for _, video_id := range video_ids {
+		var video_results []models.Subtitle
+		err := DB.Table("subtitles").Where("video_id = ?", video_id).Where("text ILIKE ?", "%"+query+"%").Find(&video_results).Error
+		if err != nil {
+			return nil, err
+		}
+		for _, video_result := range video_results {
+			results = append(results, video_result)
+		}
 	}
 	return results, nil
 }
