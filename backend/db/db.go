@@ -42,20 +42,20 @@ func InitDB() {
 	}
 
 	// Auto migrate models (create tables if they don't exist)
-	// err = DB.AutoMigrate(&models.Subtitle{})
-	// if err != nil {
-	// 	log.Fatalf("Error automigrating models: %v", err)
-	// }
+	err = DB.AutoMigrate(&models.Subtitle{})
+	if err != nil {
+		log.Fatalf("Error automigrating models: %v", err)
+	}
 
-	// err = DB.AutoMigrate(&models.Video{})
-	// if err != nil {
-	// 	log.Fatalf("Error automigrating models: %v", err)
-	// }
+	err = DB.AutoMigrate(&models.Video{})
+	if err != nil {
+		log.Fatalf("Error automigrating models: %v", err)
+	}
 
-	// err = DB.AutoMigrate(&models.Webm{})
-	// if err != nil {
-	// 	log.Fatalf("Error automigrating models: %v", err)
-	// }
+	err = DB.AutoMigrate(&models.Webm{})
+	if err != nil {
+		log.Fatalf("Error automigrating models: %v", err)
+	}
 
 	fmt.Println("Database connection established!")
 }
