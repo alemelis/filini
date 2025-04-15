@@ -26,9 +26,8 @@ func Start() {
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"https://tuotubo.natomo.xyz", "http://localhost:3000"}
-	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	config.AllowMethods = []string{"GET"} //, "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
-	// Important for video streaming
 	config.ExposeHeaders = []string{"Content-Length", "Content-Range", "Accept-Ranges"}
 
 	r := gin.Default()
@@ -37,6 +36,7 @@ func Start() {
 	// Define routes
 	r.GET("/subtitles/search", HandleSearchSubtitles)
 	r.Static("/storage/webm", "./storage/webm")
+	r.Static("/storage/poster", "./storage/poster")
 
 	for _, route := range r.Routes() {
 		fmt.Println(route.Method, route.Path)
