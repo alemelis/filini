@@ -1,13 +1,14 @@
-from pathlib import Path
-import srt
-import moviepy
-import click
-import psycopg2
-from dotenv import load_dotenv
-import os
 import hashlib
+import os
 import random
 import time
+from pathlib import Path
+
+import click
+import moviepy
+import psycopg2
+import srt
+from dotenv import load_dotenv
 
 
 def migrate_schema(conn):
@@ -28,7 +29,15 @@ def migrate_schema(conn):
             raise
 
 
-def split_video(conn, v: Path, s: Path, video_id: int, video_name: str, series: str, debug: bool = False):
+def split_video(
+    conn,
+    v: Path,
+    s: Path,
+    video_id: int,
+    video_name: str,
+    series: str,
+    debug: bool = False,
+):
     video = moviepy.VideoFileClip(v)
 
     for subtitle in srt.parse(s.read_text()):
@@ -41,9 +50,14 @@ def split_video(conn, v: Path, s: Path, video_id: int, video_name: str, series: 
         if not subtitle_id:
             continue
 
-        random_hash = hashlib.md5(f"{series}{time.time()}{random.random()}{subtitle.content}".encode()).hexdigest()[:20]
+        random_hash = hashlib.md5(
+            f"{series}{time.time()}{random.random()}{subtitle.content}".encode()
+        ).hexdigest()[:20]
         webm_path = Path("storage", "webm", series, f"{random_hash}.webm")
         clip.without_audio().write_videofile(webm_path)
+
+        poster_path = Path("storage", "poster", series, f"{random_hash}.webp")
+        clip.save_frame(poster_path, t=0)
 
         write_webm(conn, video_id, subtitle_id, webm_path)
 
@@ -161,6 +175,9 @@ def main(video_path, series, debug):
 
     if not (webm_path := Path("storage", "webm", series)).exists():
         webm_path.mkdir(parents=True, exist_ok=True)
+
+    if not (poster_path := Path("storage", "poster", series)).exists():
+        poster_path.mkdir(parents=True, exist_ok=True)
 
     subtitle_path = Path("storage", "subs", video_path.stem + ".srt")
     if not subtitle_path.exists():
